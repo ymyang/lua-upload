@@ -8,6 +8,68 @@
 local cjson = require 'cjson';
 local tracker = require('lib.fastdfs.tracker');
 local storage = require('lib.fastdfs.storage');
+local upload = require('lib.upload.upload');
+
+local key;
+local filename;
+local paramjson;
+local filedata;
+
+local chunk_size = 4096;
+
+local form, err = upload:new(chunk_size);
+if not form then
+    ngx.log(ngx.ERR, "failed to new upload: ", err);
+    ngx.exit(500);
+end
+
+form:set_timeout(1000); -- 1 sec
+
+while true do
+    local typ, res, err = form:read()
+    if not typ then
+        ngx.say('failed to read: ', err);
+        return
+    end
+
+    if typ == 'header' then
+
+        if res[1] == 'Content-Disposition' then
+            key = res[2]:match('name=\"(.-)\"');
+            if key == 'file' then
+                filename = res[2]:match('filename=\"(.-)\"');
+            end
+        end
+
+    elseif typ == 'body' then
+
+        if key == 'param' then
+
+            if paramjson == nil then
+                paramjson = res;
+            else
+                paramjson = paramjson .. res;
+            end
+
+        elseif key == 'file' then
+
+            if filedata == nil then
+                filedata = res;
+            else
+                filedata = filedata .. res;
+            end
+
+        end
+
+    elseif typ == 'part_end' then
+
+    elseif typ == 'eof' then
+        break
+
+    else
+        -- do nothing
+    end
+end
 
 local tk = tracker:new();
 tk:set_timeout(3000);
@@ -32,26 +94,18 @@ if not ok then
     ngx.exit(200);
 end
 
-local args = ngx.req.get_uri_args();
-local ext = args.fn:match(".+%.(%w+)$");
 
-ngx.req.read_body();
+local ext = filename:match(".+%.(%w+)$");
 
-local res, err = st:upload_by_buff(ngx.req.get_body_data(), ext);
+local res, err = st:upload_by_buff(filedata, ext);
 if not res then
     ngx.say("upload error:" .. err);
     ngx.exit(200);
 end
 
-local param = {
-    fileCategory = args.fc,
-    fileId = args.fi,
-    groupId = args.fi,
-    parentId = args.pi,
-    fileName = args.fn,
-    fileSize = args.fs,
-    fileGuid = res.group_name .. '/' .. res.file_name
-};
+local param = cjson.decode(paramjson);
+param.fileName = filename;
+param.fileGuid = res.group_name .. '/' .. res.file_name;
 
 local headers = ngx.req.get_headers();
 
