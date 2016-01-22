@@ -8,7 +8,7 @@
 local cjson = require 'cjson';
 local tracker = require('lib.fastdfs.tracker');
 local storage = require('lib.fastdfs.storage');
-local upload = require('lib.upload.upload');
+local upload = require('resty.upload');
 
 local key;
 local filename;
