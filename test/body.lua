@@ -6,7 +6,7 @@
 -- To change this template use File | Settings | File Templates.
 --
 local cjson = require 'cjson';
-local upload = require('lib.upload.upload');
+local upload = require('resty.upload');
 
 local chunk_size = 4096;
 
