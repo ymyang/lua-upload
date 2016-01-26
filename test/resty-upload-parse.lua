@@ -73,59 +73,10 @@ end
 ngx.say('param: ', param);
 ngx.say('filename: ', filename);
 
---[[local filename,content
-while true do
-    local typ, res, err = form:read()
-    if not typ then
-        ngx.say("failed to read: ", err)
-        return
-    end
-
-    if typ == "header" then
-        if res[1] == "Content-Disposition" then
-            key = match(res[2], "name=\"(.-)\"")
-            filename = match(res[2], "filename=\"(.-)\"")
-
-        elseif res[1] == "Content-Type" then
-            filetype = res[2]
-        end
-
-        if filename and filetype then
-            if not self.extname then
-                self.extname = filename:match(".+%.(%w+)$")
-            end
-            value = "userdata"
-        end
-
-    elseif typ == "body" then
-        if value == "userdata" then
-            if content == nil then
-                content = res
-            else
-                content = content .. res
-            end
-        end
-
-        --elseif typ == "part_end" then
-
-    elseif typ == "eof" then
-        --self.send_fastdfs(content, self.extname)
-        break
-    end
-end
-
-ngx.say('filename:' .. filename);]]
-
 -- ngx.req.read_body();
 -- local post_args = ngx.req.get_post_args();
 -- ngx.say(ngx.req.get_body_data());
 
--- local file = ngx.req.get_body_file()
--- if file then
---     ngx.say("body is in file ", file);
--- else
---     ngx.say("no body found");
--- end
 
 
 
