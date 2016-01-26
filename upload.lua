@@ -8,68 +8,23 @@
 local cjson = require 'cjson';
 local tracker = require('lib.fastdfs.tracker');
 local storage = require('lib.fastdfs.storage');
-local upload = require('resty.upload');
 
-local key;
-local filename;
-local paramjson;
-local filedata;
+ngx.req.read_body();
 
-local chunk_size = 4096;
+local headers = ngx.req.get_headers();
+ngx.req.set_header('Content-Type', headers['Content-Type']);
+local res, err = ngx.location.capture('/apps/pub/upload/form', {
+    method = ngx.HTTP_POST,
+    body = ngx.req.get_body_data()
+});
 
-local form, err = upload:new(chunk_size);
-if not form then
-    ngx.log(ngx.ERR, "failed to new upload: ", err);
-    ngx.exit(500);
+if not res then
+    ngx.say('parse form:' .. err);
+    ngx.exit(200);
 end
 
-form:set_timeout(1000); -- 1 sec
+local form = cjson.decode(res.body);
 
-while true do
-    local typ, res, err = form:read()
-    if not typ then
-        ngx.say('failed to read: ', err);
-        return
-    end
-
-    if typ == 'header' then
-
-        if res[1] == 'Content-Disposition' then
-            key = res[2]:match('name=\"(.-)\"');
-            if key == 'file' then
-                filename = res[2]:match('filename=\"(.-)\"');
-            end
-        end
-
-    elseif typ == 'body' then
-
-        if key == 'param' then
-
-            if paramjson == nil then
-                paramjson = res;
-            else
-                paramjson = paramjson .. res;
-            end
-
-        elseif key == 'file' then
-
-            if filedata == nil then
-                filedata = res;
-            else
-                filedata = filedata .. res;
-            end
-
-        end
-
-    elseif typ == 'part_end' then
-
-    elseif typ == 'eof' then
-        break
-
-    else
-        -- do nothing
-    end
-end
 
 local tk = tracker:new();
 tk:set_timeout(3000);
@@ -94,8 +49,14 @@ if not ok then
     ngx.exit(200);
 end
 
+local filename = form.file.originalname;
 
 local ext = filename:match(".+%.(%w+)$");
+
+local file, err = io.open(form.file.path, "rb");
+local filedata = file:read('*a');
+file:close();
+file = nil;
 
 local res, err = st:upload_by_buff(filedata, ext);
 if not res then
@@ -103,18 +64,14 @@ if not res then
     ngx.exit(200);
 end
 
-local param = cjson.decode(paramjson);
-param.fileName = filename;
-param.fileGuid = res.group_name .. '/' .. res.file_name;
-
-local headers = ngx.req.get_headers();
+form.file.fileGuid = res.group_name .. '/' .. res.file_name;
 
 ngx.req.set_header("Content-Type", "application/json;charset=utf-8");
 ngx.req.set_header("ct", headers.ct);
 
 local res, err = ngx.location.capture('/apps/file', {
     method = ngx.HTTP_POST,
-    body = cjson.encode(param)
+    body = cjson.encode(form)
 });
 
 if not res then

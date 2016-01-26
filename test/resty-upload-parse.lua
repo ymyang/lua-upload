@@ -8,6 +8,11 @@
 local cjson = require 'cjson';
 local upload = require('resty.upload');
 
+local key;
+local filename;
+local paramjson;
+local filedata;
+
 local chunk_size = 4096;
 
 local form, err = upload:new(chunk_size);
@@ -17,11 +22,6 @@ if not form then
 end
 
 form:set_timeout(1000); -- 1 sec
-
-local key;
-local filename;
-local param;
-local data;
 
 while true do
     local typ, res, err = form:read()
@@ -34,7 +34,6 @@ while true do
 
         if res[1] == 'Content-Disposition' then
             key = res[2]:match('name=\"(.-)\"');
-            -- ngx.say('key: ', key);
             if key == 'file' then
                 filename = res[2]:match('filename=\"(.-)\"');
             end
@@ -44,18 +43,18 @@ while true do
 
         if key == 'param' then
 
-            if param == nil then
-                param = res;
+            if paramjson == nil then
+                paramjson = res;
             else
-                param = param .. res;
+                paramjson = paramjson .. res;
             end
 
         elseif key == 'file' then
 
-            if data == nil then
-                data = res;
+            if filedata == nil then
+                filedata = res;
             else
-                data = data .. res;
+                filedata = filedata .. res;
             end
 
         end
@@ -70,7 +69,7 @@ while true do
     end
 end
 
-ngx.say('param: ', param);
+ngx.say('param: ', paramjson);
 ngx.say('filename: ', filename);
 
 -- ngx.req.read_body();
