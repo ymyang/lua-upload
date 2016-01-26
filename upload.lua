@@ -53,18 +53,57 @@ local filename = form.file.originalname;
 
 local ext = filename:match(".+%.(%w+)$");
 
-local file, err = io.open(form.file.path, "rb");
-local filedata = file:read('*a');
-file:close();
-file = nil;
+local blockSize = 20000000;
+local fileSize = form.file.size;
 
-local res, err = st:upload_by_buff(filedata, ext);
-if not res then
-    ngx.say("upload error:" .. err);
-    ngx.exit(200);
+local file, err = io.open(form.file.path, "rb");
+
+local file_info;
+
+if (fileSize < blockSize) then
+    local filedata = file:read('*a');
+    file:close();
+    file = nil;
+
+    local res, err = st:upload_by_buff(filedata, ext);
+    st:set_keepalive(0, 5);
+    if not res then
+        ngx.say("upload error:" .. err);
+        ngx.exit(200);
+    end
+    file_info = res;
+
+else
+    local data, count = nil, 0;
+    repeat
+        data = file:read(blockSize);
+        if not data then
+            break
+        end
+        if count == 0 then
+            local res, err = st:upload_appender_by_buff(data, ext);
+            if err then
+                st:set_keepalive(0, 5);
+                ngx.say("fail to invoke storage upload_appender_by_buff() ! err:" .. err);
+            end
+            file_info = res;
+        else
+            local res, err = st:append_by_buff(file_info.group_name, file_info.file_name, data);
+            if err then
+                st:set_keepalive(0, 5);
+                ngx.say("fail to invoke storage append_by_buff() ! err:" .. err);
+            end
+        end
+        count = count + 1;
+    until not data
+
+    st:set_keepalive(0, 5);
+    file:close();
+    file = nil;
 end
 
-form.file.fileGuid = res.group_name .. '/' .. res.file_name;
+
+form.file.fileGuid = file_info.group_name .. '/' .. file_info.file_name;
 
 ngx.req.set_header("Content-Type", "application/json;charset=utf-8");
 ngx.req.set_header("ct", headers.ct);
