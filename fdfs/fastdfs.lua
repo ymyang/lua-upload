@@ -6,8 +6,8 @@
 -- To change this template use File | Settings | File Templates.
 --
 local cjson = require 'cjson';
-local tracker = require('lib.fastdfs.tracker');
-local storage = require('lib.fastdfs.storage');
+local tracker = require 'lib.fastdfs.tracker';
+local storage = require 'lib.fastdfs.storage';
 local config = require 'config';
 
 local function get_tracker()
