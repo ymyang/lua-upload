@@ -17,7 +17,7 @@ local chunk_size = 4096;
 
 local form, err = upload:new(chunk_size);
 if not form then
-    ngx.log(ngx.ERR, "failed to new upload: ", err);
+    ngx.log(ngx.ERR, 'failed to new upload: ', err);
     ngx.exit(500);
 end
 

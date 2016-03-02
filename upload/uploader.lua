@@ -32,7 +32,7 @@ local function upload_to_fdfs(file)
 
     local filename = file.originalname;
 
-    local ext = filename:match(".+%.(%w+)$");
+    local ext = filename:match('.+%.(%w+)$');
 
     local blockSize = 20000000; -- 20M
     local fileSize = file.size;
@@ -92,8 +92,8 @@ local function save_file(form, file_info)
     form.file.fileGuid = file_info.group_name .. '/' .. file_info.file_name;
 
     local headers = ngx.req.get_headers();
-    ngx.req.set_header("Content-Type", "application/json;charset=utf-8");
-    ngx.req.set_header("ct", headers.ct);
+    ngx.req.set_header('Content-Type', 'application/json;charset=utf-8');
+    ngx.req.set_header('ct', headers.ct);
 
     local res, err = ngx.location.capture('/apps/file', {
         method = ngx.HTTP_POST,

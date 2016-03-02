@@ -18,7 +18,7 @@ if token == nil or token == '' then
     ngx.exit(403);
 end
 
-local res = ngx.location.capture("/apps/pub/cache?key=" .. key);
+local res = ngx.location.capture('/apps/pub/cache?key=' .. key);
 if res.status ~= 200 then
     ngx.log(ngx.ERR, 'get cache_token fail:' .. res.status);
     ngx.exit(500);
