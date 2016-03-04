@@ -5,6 +5,7 @@
 -- Time: 14:25
 -- To change this template use File | Settings | File Templates.
 --
+local cjson = require 'cjson';
 
 local function check_download(token)
     local key = ngx.var.arg_dl;
@@ -37,8 +38,8 @@ local function check_download(token)
         ngx.exit(403);
     end
 
-    if token ~= memc_token then
-        ngx.log(ngx.ERR, 'client token not match cache token!');
+    if token ~= cache_token then
+        ngx.log(ngx.ERR, 'client token not match cache token! client token:' .. token .. ', cache_token:' .. cache_token);
         ngx.exit(403);
     end
 

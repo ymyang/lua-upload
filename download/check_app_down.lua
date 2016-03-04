@@ -6,21 +6,25 @@
 -- To change this template use File | Settings | File Templates.
 --
 local check = require 'download.check_download';
-
-local token = get_token();
-check.check_download(token);
-
+local cjson = require 'cjson';
 
 local function get_token()
-    if ngx.var.arg_ct ~= nil then
-        return ngx.var.arg_ct;
+    local headers = ngx.req.get_headers();
+    -- ngx.log(ngx.ERR, 'headers:' .. cjson.encode(headers));
+    if headers.ct ~= nil then
+        return headers.ct;
     end
 
-    if ngx.var.http_ct ~= nil then
-        return ngx.var.http_ct;
+    local args = ngx.req.get_uri_args();
+    -- ngx.log(ngx.ERR, 'args:' .. cjson.encode(args));
+    if args.ct ~= nil then
+        return args.ct;
     end
 
     if ngx.var.http_cookie ~= nil then
         return ngx.var.cookie_ct;
     end
 end
+
+local token = get_token();
+check.check_download(token);

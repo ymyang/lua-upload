@@ -7,19 +7,23 @@
 --
 local check = require 'download.check_download';
 
-local token = get_token();
-check.check_download(token);
-
 local function get_token()
-    if ngx.var.arg_st ~= nil then
-        return ngx.var.arg_st;
+    local headers = ngx.req.get_headers();
+    -- ngx.log(ngx.ERR, 'headers:' .. cjson.encode(headers));
+    if headers.st ~= nil then
+        return headers.st;
     end
 
-    if ngx.var.http_st ~= nil then
-        return ngx.var.http_st;
+    local args = ngx.req.get_uri_args();
+    -- ngx.log(ngx.ERR, 'args:' .. cjson.encode(args));
+    if args.st ~= nil then
+        return args.st;
     end
 
     if ngx.var.http_cookie ~= nil then
         return ngx.var.cookie_st;
     end
 end
+
+local token = get_token();
+check.check_download(token);
