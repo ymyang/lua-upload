@@ -15,6 +15,10 @@ local function check_download(token)
         ngx.exit(403);
     end
 
+    if key == 'mb' then
+        return;
+    end
+
     if token == nil or token == '' then
         ngx.log(ngx.ERR, 'token empty');
         ngx.exit(403);
