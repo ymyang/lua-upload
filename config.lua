@@ -7,9 +7,12 @@
 --
 return {
     fdfs = {
-        tracker = {
-            host = '127.0.0.1',
-            port = 22122
+        trackers = {
+            {
+                host = '127.0.0.1',
+                port = 22122
+            }
+
         }
     }
 };

@@ -10,16 +10,53 @@ local tracker = require 'lib.fastdfs.tracker';
 local storage = require 'lib.fastdfs.storage';
 local config = require 'config';
 
-local function get_tracker()
+local trackers = config.fdfs.trackers;
+local _index = 1;
+
+local function connect_tracker(conf)
     local tk = tracker:new();
     tk:set_timeout(3000);
 
-    local ok, err = tk:connect(config.fdfs.tracker);
+    local ok, err = tk:connect(conf);
 
     if not ok then
-        return nil, 'failed to connect to tracker:' .. cjson.encode(config.fdfs.tracker) .. ' err:' .. err;
+        return nil, 'connect_tracker:' .. cjson.encode(conf) .. ' [err]:' .. err;
     end
     return tk;
+end
+
+local function get_tracker()
+    _index = _index + 1;
+    if _index > #trackers then
+        _index = 1;
+    end
+
+    local tk, err = connect_tracker(trackers[_index]);
+    if tk then
+        return tk;
+    end
+
+    ngx.log(ngx.ERR, "connect tracker: " .. cjson.encode(trackers[_index]) .. ' [err]:' .. err);
+
+    if #trackers == 1 then
+        return nil, "get_tracker fail: " .. cjson.encode(trackers[_index])
+    end
+
+    for i = 1, #trackers do
+        if i ~= _index then
+            tk, err = connect_tracker(trackers[i]);
+            if tk then
+                break;
+            end
+            ngx.log(ngx.ERR, "connect tracker: " .. cjson.encode(trackers[i]) .. ' [err]:' .. err);
+        end
+    end
+
+    if tk then
+        return tk;
+    else
+        return nil, 'get_tracker all fail, [err]:' .. err;
+    end
 end
 
 local function get_storage()
@@ -30,14 +67,14 @@ local function get_storage()
 
     local res, err = tk:query_storage_store();
     if not res then
-        return nil, 'query storage err:' .. err;
+        return nil, 'query storage [err]:' .. err;
     end
 
     local st = storage:new();
     st:set_timeout(3000);
     local ok, err = st:connect(res);
     if not ok then
-        return nil, 'connect storage err:' .. err;
+        return nil, 'connect storage [err]:' .. err;
     end
 
     return st;
