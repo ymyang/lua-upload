@@ -88,14 +88,23 @@ local function upload_to_fdfs(file)
     return file_info;
 end
 
-local function save_file(form, file_info)
+local function save_file(form, file_info, share)
     form.file.fileGuid = file_info.group_name .. '/' .. file_info.file_name;
 
     local headers = ngx.req.get_headers();
     ngx.req.set_header('Content-Type', 'application/json;charset=utf-8');
-    ngx.req.set_header('ct', headers.ct);
 
-    local res, err = ngx.location.capture('/apps/file', {
+    local url = '';
+
+    if not share then
+        ngx.req.set_header('ct', headers.ct);
+        url = '/apps/file';
+    else
+        url = '/apps/pub/share/file';
+        ngx.req.set_header('st', headers.st);
+    end
+
+    local res, err = ngx.location.capture(url, {
         method = ngx.HTTP_POST,
         body = cjson.encode(form)
     });
@@ -107,7 +116,7 @@ local function save_file(form, file_info)
     return res.body;
 end
 
-local function single_upload()
+local function single_upload(share)
     local form, err = parse_form();
     if not form then
         return nil, err;
@@ -118,7 +127,7 @@ local function single_upload()
         return nil, err;
     end
 
-    return save_file(form, file_info);
+    return save_file(form, file_info, share);
 end
 
 return {
