@@ -80,6 +80,40 @@ local function get_storage()
     return st;
 end
 
+local function list_groups()
+    local tk, err = get_tracker();
+    if not tk then
+        return nil, err;
+    end
+
+    tk:set_v4(true);
+
+    local groups, err = tk:list_groups();
+    if not groups then
+        return nil, 'list groups [err]:' .. err;
+    end
+
+    return groups;
+end
+
+local function list_servers(group_name)
+    local tk, err = get_tracker();
+    if not tk then
+        return nil, err;
+    end
+
+    tk:set_v4(true);
+
+    local servers, err = tk:list_servers(group_name);
+    if not servers then
+        return nil, 'list storages [err]:' .. err;
+    end
+
+    return servers;
+end
+
 return {
-    get_storage = get_storage
+    get_storage = get_storage,
+    list_groups = list_groups,
+    list_servers = list_servers
 };

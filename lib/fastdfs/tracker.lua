@@ -255,7 +255,7 @@ function list_groups(self)
     -- read body
     if hdr.len > 0 then
         if hdr.len % body_len ~= 0 then
-            return nil, "response body error"
+            return nil, "response body error, body_len:" .. body_len .. ", hdr.len:" .. hdr.len
         end
         local body, err, part = sock:receive(hdr.len)
         if not body then
@@ -323,7 +323,7 @@ function list_one_group(self, group_name)
     -- read body
     if hdr.len > 0 then
         if hdr.len ~= body_len then
-            return nil, "response body length error"
+            return nil, "response body length error, body_len:" .. body_len .. ", hdr.len:" .. hdr.len
         end
         local body, err, part = sock:receive(hdr.len)
         if not body then
@@ -384,7 +384,7 @@ function list_servers(self, group_name)
             body_len = 584
         end
         if hdr.len  % body_len ~= 0 then
-            return nil, "response body length error"
+            return nil, "response body length error, body_len:" .. body_len .. ", hdr.len:" .. hdr.len
         end
         local body, err, part = sock:receive(hdr.len)
         if not body then
