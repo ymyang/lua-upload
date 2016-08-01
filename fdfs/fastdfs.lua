@@ -113,7 +113,7 @@ local function list_groups()
     return groups;
 end
 
--- list tracker servers
+-- list storage servers
 local function list_servers(group_name)
     local tk, err = get_tracker();
     if not tk then
