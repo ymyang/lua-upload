@@ -8,10 +8,13 @@
 local cjson = require 'cjson';
 local fdfs = require 'fdfs.fastdfs';
 
+-- parse form
 local function parse_form()
     ngx.req.read_body();
     local headers = ngx.req.get_headers();
     ngx.req.set_header('Content-Type', headers['Content-Type']);
+
+    -- invoke node service
     local res, err = ngx.location.capture('/apps/pub/upload/form', {
         method = ngx.HTTP_POST,
         body = ngx.req.get_body_data()
@@ -24,27 +27,35 @@ local function parse_form()
     return cjson.decode(res.body);
 end
 
+-- upload file to FastDFS
 local function upload_to_fdfs(file)
+    -- get storage
     local st, err = fdfs.get_storage();
     if not st then
         return nil, err;
     end
 
+    -- file name
     local filename = file.originalname;
 
+    -- file ext name
     local ext = filename:match('.+%.(%w+)$');
 
+    -- block size
     local blockSize = 20000000; -- 20M
+    -- file size
     local fileSize = file.size;
 
     local file, err = io.open(file.path, 'rb');
     if not file then
+        -- open file err
         return nil, 'open file ' .. file.path .. ' err:' .. err;
     end
 
     local file_info;
 
     if (fileSize < blockSize) then
+        -- one block
         local filedata = file:read('*a');
         file:close();
         file = nil;
@@ -57,6 +68,7 @@ local function upload_to_fdfs(file)
         file_info = res;
 
     else
+        -- multi blocks
         local data, count = nil, 0;
         repeat
             data = file:read(blockSize);
@@ -64,6 +76,7 @@ local function upload_to_fdfs(file)
                 break
             end
             if count == 0 then
+                -- first block
                 local res, err = st:upload_appender_by_buff(data, ext);
                 if err then
                     st:set_keepalive(0, 5);
@@ -71,6 +84,7 @@ local function upload_to_fdfs(file)
                 end
                 file_info = res;
             else
+                -- append blocks
                 local res, err = st:append_by_buff(file_info.group_name, file_info.file_name, data);
                 if err then
                     st:set_keepalive(0, 5);
@@ -88,6 +102,7 @@ local function upload_to_fdfs(file)
     return file_info;
 end
 
+-- save file to db
 local function save_file(form, file_info, share)
     form.file.fileGuid = file_info.group_name .. '/' .. file_info.file_name;
 
@@ -104,6 +119,7 @@ local function save_file(form, file_info, share)
         ngx.req.set_header('st', headers.st);
     end
 
+    -- invoke node service
     local res, err = ngx.location.capture(url, {
         method = ngx.HTTP_POST,
         body = cjson.encode(form)
@@ -116,17 +132,21 @@ local function save_file(form, file_info, share)
     return res.body;
 end
 
+-- upload single file
 local function single_upload(share)
+    -- parse form data
     local form, err = parse_form();
     if not form then
         return nil, err;
     end
 
+    -- upload file to FastDFS
     local file_info, err = upload_to_fdfs(form.file);
     if not file_info then
         return nil, err;
     end
 
+    -- save file into to db
     return save_file(form, file_info, share);
 end
 

@@ -13,6 +13,7 @@ local config = require 'config';
 local trackers = config.fdfs.trackers;
 local _index = 1;
 
+-- connect to tracker
 local function connect_tracker(conf)
     local tk = tracker:new();
     tk:set_timeout(3000);
@@ -25,23 +26,30 @@ local function connect_tracker(conf)
     return tk;
 end
 
+-- get a tracker connection
 local function get_tracker()
+    -- tracker index
     _index = _index + 1;
     if _index > #trackers then
         _index = 1;
     end
 
+    -- attempt to connect to tracker
     local tk, err = connect_tracker(trackers[_index]);
     if tk then
+        -- connect ok
         return tk;
     end
 
+    -- connect fail
     ngx.log(ngx.ERR, "connect tracker: " .. cjson.encode(trackers[_index]) .. ' [err]:' .. err);
 
     if #trackers == 1 then
+        -- only one tracker
         return nil, "get_tracker fail: " .. cjson.encode(trackers[_index])
     end
 
+    -- connect to other trackers
     for i = 1, #trackers do
         if i ~= _index then
             tk, err = connect_tracker(trackers[i]);
@@ -55,31 +63,40 @@ local function get_tracker()
     if tk then
         return tk;
     else
+    -- no available tracker
         return nil, 'get_tracker all fail, [err]:' .. err;
     end
 end
 
+-- connect to storage
 local function get_storage()
+    -- get tracket connection
     local tk, err = get_tracker();
     if not tk then
+        -- no available tracker
         return nil, err;
     end
 
+    -- get a storage
     local res, err = tk:query_storage_store();
     if not res then
+        -- no available storage
         return nil, 'query storage [err]:' .. err;
     end
 
+    -- conect to storage
     local st = storage:new();
     st:set_timeout(3000);
     local ok, err = st:connect(res);
     if not ok then
+        -- no available storage
         return nil, 'connect storage [err]:' .. err;
     end
 
     return st;
 end
 
+-- list groups
 local function list_groups()
     local tk, err = get_tracker();
     if not tk then
@@ -96,6 +113,7 @@ local function list_groups()
     return groups;
 end
 
+-- list tracker servers
 local function list_servers(group_name)
     local tk, err = get_tracker();
     if not tk then

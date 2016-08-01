@@ -8,7 +8,10 @@
 local cjson = require 'cjson';
 local uploader = require 'upload.uploader';
 
+-- upload file
 local res_body, err = uploader.single_upload(true);
+
+-- handle res
 if not res_body then
     ngx.log(ngx.ERR, err);
     res_body = {
