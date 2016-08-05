@@ -69,7 +69,7 @@ local function get_tracker()
 end
 
 -- connect to storage
-local function get_storage()
+local function get_storage(group_name)
     -- get tracket connection
     local tk, err = get_tracker();
     if not tk then
@@ -78,7 +78,35 @@ local function get_storage()
     end
 
     -- get a storage
-    local res, err = tk:query_storage_store();
+    local res, err = tk:query_storage_store(group_name);
+    if not res then
+        -- no available storage
+        return nil, 'query storage [err]:' .. err;
+    end
+
+    -- conect to storage
+    local st = storage:new();
+    st:set_timeout(3000);
+    local ok, err = st:connect(res);
+    if not ok then
+        -- no available storage
+        return nil, 'connect storage [err]:' .. err;
+    end
+
+    return st;
+end
+
+-- get storage for update
+local function get_storage_update(group_name, file_name)
+    -- get tracket connection
+    local tk, err = get_tracker();
+    if not tk then
+        -- no available tracker
+        return nil, err;
+    end
+
+    -- get a storage
+    local res, err = tk:query_storage_update(group_name, file_name);
     if not res then
         -- no available storage
         return nil, 'query storage [err]:' .. err;
