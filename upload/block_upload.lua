@@ -19,7 +19,6 @@ if not res_body then
         status = 'err_500',
         msg = err
     };
-    ngx.print(cjson.encode(res_body));
-else
-    ngx.print(res_body);
 end
+
+ngx.print(cjson.encode(res_body));

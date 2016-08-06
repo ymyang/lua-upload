@@ -197,7 +197,7 @@ local function block_upload()
             file_name = file_name
         };
 
-        uploadedSize = blockSize;
+        uploadedSize = param.offset + blockSize;
 
     else
 
@@ -214,11 +214,11 @@ local function block_upload()
         end
 
         file_info = res;
-        uploadedSize = param.offset + blockSize;
+        uploadedSize = blockSize;
     end
 
     if uploadedSize < param.fileSize then
-        -- check md5
+        -- return
         return {
             status = 'ok',
             data = {
@@ -240,12 +240,26 @@ local function block_upload()
         if res.body ~= param.fileMd5 then
             return {
                 status = 'err_upload_fail',
-                msg = 'md5 err'
+                msg = 'file md5 err'
             };
         end
 
         -- save file into to db
-        return save_file(form, file_info);
+        local res_body, err = save_file(form, file_info);
+
+        if not res_body then
+            return nil, err;
+        end
+
+        -- return
+        return {
+            status = 'ok',
+            data = {
+                file = cjson.decode(res_body).data,
+                appenderFileId = file_info.group_name .. '/' .. file_info.file_name,
+                uploadedSize = uploadedSize
+            }
+        };
     end
 
 end

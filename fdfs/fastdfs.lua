@@ -160,6 +160,7 @@ end
 
 return {
     get_storage = get_storage,
+    get_storage_update = get_storage_update,
     list_groups = list_groups,
     list_servers = list_servers
 };
